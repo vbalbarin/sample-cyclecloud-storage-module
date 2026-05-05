@@ -1,4 +1,4 @@
-# Sample CycleCloud Storage Module (Gold-tier HPC)
+# Sample CycleCloud Storage Module
 
 This project provides sample code for storage abstraction for Azure CycleCloud HPC clusters.
 
