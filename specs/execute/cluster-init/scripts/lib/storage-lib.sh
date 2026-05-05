@@ -371,3 +371,57 @@ debug_topology() {
   log "=== mdadm (if present) ==="
   command -v mdadm >/dev/null 2>&1 && mdadm --detail --scan || true
 }
+
+###############################################################################
+# Scratch cleanup policy (boot-time hygiene)
+###############################################################################
+clean_scratch_on_boot() {
+  local scratch_mount="${1:-/mnt/scratch}"
+  local mode="${SCRATCH_CLEAN_MODE:-safe}"
+
+  if ! mountpoint -q "$scratch_mount"; then
+    log "Scratch cleanup skipped: $scratch_mount not mounted"
+    return 0
+  fi
+
+  log "Applying scratch cleanup policy (mode=$mode)"
+
+  case "$mode" in
+    safe)
+      # Delete contents only (preserves mount + filesystem)
+      find "$scratch_mount" -mindepth 1 -xdev -exec rm -rf {} + 2>/dev/null || true
+      log "Scratch contents cleared (safe mode)"
+      ;;
+
+    full)
+      # Rebuild filesystem (advanced HPC use only)
+      local dev
+      dev="$(findmnt -n -o SOURCE --target "$scratch_mount" || true)"
+
+      if [ -z "$dev" ]; then
+        log "ERROR: cannot determine device for $scratch_mount"
+        return 1
+      fi
+
+      log "Full wipe requested for $dev"
+
+      umount "$scratch_mount" || {
+        log "ERROR: failed to unmount $scratch_mount"
+        return 1
+      }
+
+      format_device "$dev" "${FS_TYPE:-ext4}"
+
+      mount "$dev" "$scratch_mount"
+
+      log "Scratch fully reinitialized (full mode)"
+      ;;
+
+    *)
+      log "WARNING: unknown SCRATCH_CLEAN_MODE=$mode"
+      ;;
+  esac
+
+  return 0
+}
+``

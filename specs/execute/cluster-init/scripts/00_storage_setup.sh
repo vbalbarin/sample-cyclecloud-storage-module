@@ -47,6 +47,13 @@ else
   fi
 fi
 
+# ------------------------------------------------------------------------------
+# Scratch clean-on-boot policy
+# ------------------------------------------------------------------------------
+if [ "${SCRATCH_CLEAN_ON_BOOT:-true}" = "true" ] && mountpoint -q "$SCRATCH_MOUNTPOINT"; then
+  clean_scratch_on_boot "$SCRATCH_MOUNTPOINT"
+fi
+
 # Shared
 case "$STORAGE_SHARED_MODE" in
   none)
